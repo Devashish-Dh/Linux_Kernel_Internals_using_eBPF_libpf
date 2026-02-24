@@ -166,7 +166,7 @@ int main() {
     // poll once for all managed maps
     while (1) {
         // wakes up if data arrives in EITHER proc_map or file_map
-        ring_buffer__poll(rb, 100);
+        ring_buffer__poll(rb, 10);
     }
 
     // clean up links
