@@ -54,7 +54,6 @@ SEC("tp/sched/sched_process_exit")
 int handle_proc_exit(struct trace_event_raw_sched_process_template* ctx)
 {
 	struct proc_log *exit_event;
-
 	u64 id = bpf_get_current_pid_tgid(); // get PID and TID of exiting thread/process 
 
     __u32 tgid = id >> 32;        // main process
@@ -109,6 +108,44 @@ int handle_proc_create(struct trace_event_raw_sched_process_fork* ctx)
     bpf_ringbuf_submit(create_event, 0);
     return 0;
 }
+
+
+SEC("tp/syscalls/sys_enter_execve")
+int handle_prog_exec(struct trace_event_raw_sys_enter* ctx)
+{
+    //for debugging :
+    char msg[] = "EXEC TRIGGERED";
+    bpf_trace_printk(msg, sizeof(msg));
+
+    struct proc_log *exec_event;
+    u64 id = bpf_get_current_pid_tgid(); // get PID and TID of exiting thread/process 
+
+    __u32 tgid = id >> 32;        // main process
+    __u32 tid  = id & 0xFFFFFFFF; // current thread ID
+
+    exec_event = bpf_ringbuf_reserve(&proc_events_map, sizeof(*exec_event), 0);
+    if (!exec_event)
+        return 0;
+
+    __builtin_memset(exec_event, 0, sizeof(*exec_event));
+
+    exec_event->tgid = tgid; // caller PID
+    exec_event->tid = tid;   // caller TID
+    exec_event->pid = tgid;  // In exec, PID = TGID because this is a program execution
+    exec_event->event = PROG_EXEC; 
+
+    const char *filename_ptr = (const char *)ctx->args[0];
+    bpf_probe_read_user_str(&exec_event->progName, sizeof(exec_event->progName), filename_ptr);
+
+    bpf_ringbuf_submit(exec_event, 0);
+    return 0;
+}
+
+
+
+
+
+
 
 // file events :
 #define O_CREAT 0100 // need it for file events differentiation (in octal here)

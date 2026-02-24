@@ -13,13 +13,14 @@
 function names : 
     handle_proc_exit
     handle_proc_create
+    handle_prog_exec
 
     handle_openat_entry
     handle_openat_exit
     handle_close_entry
 */
 
-#define MAX_LINKS 5
+#define MAX_LINKS 6
 
 static int handle_event(void *ctx, void *data, size_t data_sz) {
     // since file struct has one more field and both have exact same layout for data...
@@ -32,20 +33,23 @@ static int handle_event(void *ctx, void *data, size_t data_sz) {
         
         // for  PROC_CREATE have to use p->pid (child) for PROC_EXIT have to use p->tgid (exiting process)
         int display_pid = (p->event == PROC_CREATE) ? p->pid : p->tgid;
-        printf("LLT007> %s %d\n\n\n", type, display_pid);
+        printf("LLT007> %s %d\n\n", type, display_pid);
+    }
+    else if (e->event == PROG_EXEC) {
+        printf("LLT007> PROG_EXEC %d %s\n\n", e->tgid, e->progName);
     } 
     else if (e->event >= FILE_OPEN) {
         struct file_log *p = data;
 
-        // skip printing if the filePath is "unknown/not-tracked"
-        if (strcmp(p->filePath, "unknown/not-tracked") == 0) {
-            return 0;		
-        }
+    // skip printing if the filePath is "unknown/not-tracked"
+    if (strcmp(p->filePath, "unknown/not-tracked") == 0) {
+        return 0;
+    }
 
         const char *type = (p->event == FILE_OPEN) ? "FILE_OPEN" : 
                            (p->event == FILE_CREATE) ? "FILE_CREATE" : "FILE_CLOSE";
         
-        printf("LLT007> %s %d %s\n\n\n", type, p->tgid, p->filePath);
+        printf("LLT007> %s %d %s\n\n", type, p->tgid, p->filePath);
     }
 
     return 0;
@@ -97,6 +101,19 @@ int main() {
     } else {
         fprintf(stderr, "WARNING: program handle_proc_create not found\n");
     }
+
+    // attach handle_prog_exec
+    prog = bpf_object__find_program_by_name(obj, "handle_prog_exec");
+    if (prog) {
+        links[link_index] = bpf_program__attach_tracepoint(prog, "syscalls", "sys_enter_execve");
+        if (!links[link_index]) {
+            fprintf(stderr, "WARNING: failed to attach handle_prog_exec\n");
+        } else {
+            link_index++;
+        }
+    } else {
+        fprintf(stderr, "WARNING: program handle_prog_exec not found\n");
+    }    
 
     // attach handle_openat_entry
     prog = bpf_object__find_program_by_name(obj, "handle_openat_entry");

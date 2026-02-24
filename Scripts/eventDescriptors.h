@@ -10,7 +10,8 @@ enum event_type
         PROC_EXIT,   //2
         FILE_OPEN,   //3
         FILE_CLOSE,  //4
-        FILE_CREATE  //5
+        FILE_CREATE, //5
+        PROG_EXEC    //6
     };
 
     
