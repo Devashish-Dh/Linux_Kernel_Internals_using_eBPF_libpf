@@ -32,20 +32,20 @@ static int handle_event(void *ctx, void *data, size_t data_sz) {
         
         // for  PROC_CREATE have to use p->pid (child) for PROC_EXIT have to use p->tgid (exiting process)
         int display_pid = (p->event == PROC_CREATE) ? p->pid : p->tgid;
-        printf("LLT007> %s %d\n", type, display_pid);
+        printf("LLT007> %s %d\n\n\n", type, display_pid);
     } 
     else if (e->event >= FILE_OPEN) {
         struct file_log *p = data;
 
         // skip printing if the filePath is "unknown/not-tracked"
         if (strcmp(p->filePath, "unknown/not-tracked") == 0) {
-            return 0;
+            return 0;		
         }
 
         const char *type = (p->event == FILE_OPEN) ? "FILE_OPEN" : 
                            (p->event == FILE_CREATE) ? "FILE_CREATE" : "FILE_CLOSE";
         
-        printf("LLT007> %s %d %s\n", type, p->tgid, p->filePath);
+        printf("LLT007> %s %d %s\n\n\n", type, p->tgid, p->filePath);
     }
 
     return 0;
