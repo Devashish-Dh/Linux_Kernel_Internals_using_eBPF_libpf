@@ -3,6 +3,10 @@
 # Define the log file
 LOG_FILE="monitor_output.log"
 
+# Build the Project
+echo "Compiling project..."
+make clean && make
+
 echo "Starting BPF Monitor..."
 echo "Output is being saved to $LOG_FILE"
 echo "Press Ctrl+C to stop."
